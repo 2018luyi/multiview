@@ -57,30 +57,15 @@ cv2.setMouseCallback('frame', mouse_callback)
 while(True):
 
     # Capture frame-by-frame
-    #ret, frame = cap.read()
-    #ret2, frame2 = cap2.read()
-    #ret3, frame3 = cap3.read()
-    #ret4, frame4 = cap4.read()
-    
-    f_test = {}
-    _, f_test[0] = cap.read()
-    _, f_test[1] = cap2.read()
-    _, f_test[2] = cap3.read()
-    _, f_test[3] = cap4.read()
-    
-    frame = f_test[0]
-    frame2 = f_test[1]
-    frame3 = f_test[2]
-    frame4 = f_test[3]
+    ret, frame = cap.read()
+    ret2, frame2 = cap2.read()
+    ret3, frame3 = cap3.read()
+    ret4, frame4 = cap4.read()
     
     # Merge
-    txt_frame = np.zeros((60,1280,3), np.uint8)
     vis1 = np.concatenate((frame, frame2), axis=1)
     vis2 = np.concatenate((frame3, frame4), axis=1)
-    vis = np.concatenate((txt_frame,vis1,vis2), axis=0)
-    
-    
-    #vis = np.concatenate((txt_frame,vis), axis=0)
+    vis = np.concatenate((vis1,vis2), axis=0)
     
     # text
     text = "한글"
