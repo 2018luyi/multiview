@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import time
 from PIL import ImageFont, ImageDraw, Image
 
 cap = cv2.VideoCapture(0)
@@ -20,6 +21,7 @@ cap3.set(cv2.CAP_PROP_FRAME_HEIGHT, h_size)
 cap4.set(cv2.CAP_PROP_FRAME_WIDTH, w_size)
 cap4.set(cv2.CAP_PROP_FRAME_HEIGHT, h_size)
 
+preTime = time.time()
 
 
 
@@ -50,12 +52,15 @@ def mouse_callback(event, x, y, flags, param):
 
         else: selection = 0
 
-        print(refPt)
+        #print(refPt)
 
 cv2.setMouseCallback('frame', mouse_callback)
 
 while(True):
 
+    fps = 1.0/(time.time()-preTime)
+    
+    preTime = time.time()
     # Capture frame-by-frame
     #ret, frame = cap.read()
     #ret2, frame2 = cap2.read()
@@ -83,7 +88,7 @@ while(True):
     #vis = np.concatenate((txt_frame,vis), axis=0)
     
     # text
-    text = "한글"
+    text = "한글 FPS: %.1f" % fps
     x=50
     h=100
     
