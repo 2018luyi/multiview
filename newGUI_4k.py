@@ -5,6 +5,7 @@ from PIL import ImageFont, ImageDraw, Image, ImageColor
 import can
 from threading import Thread
 import time
+import subprocess
 
 TXT_WHT = (255,255,255,255)
 TXT_BLU = (255,0,0,255)
@@ -19,11 +20,11 @@ TXT_ORG = (0,128,255,255)
 # 0b0111111111110000
 
 class multiView:
-    def __init__(self, vid_num=[0, 2, 4, 6], can_chan='can0', vid_res=[640, 480],
+    def __init__(self, vid_num=[0, 2, 4, 6], can_chan='can0', cap_res=[640, 480],
                  win_n='MultiView', can_filter=[{"can_id": 0x19ffa050, "can_mask": 0x1FFFFF00, "extended": True}]):
         self.vid = vid_num
         self.can_c = can_chan
-        self.vid_res = vid_res
+        self.vid_res = cap_res
         
         self.cap = {}
         
@@ -32,6 +33,7 @@ class multiView:
         
         self.can_filter = can_filter
         self.can_data = ["", 0, 0, 0, 0, 0]
+        self.can_timeout = 1
         
         self.fontpath = "/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf"
         self.font1 = ImageFont.truetype(self.fontpath, 30)
@@ -221,9 +223,9 @@ class multiView:
     def textDrawing(self, frame):
         # Information Bar
         # Merging text part (upper bar)
-        text_frame = np.zeros((self.txtRes[1], self.txtRes[0], 3), np.uint8)
-        show_frame = np.concatenate((text_frame, frame), axis=0)
-
+        #text_frame = np.zeros((self.txtRes[1], self.txtRes[0], 3), np.uint8)
+        #show_frame = np.concatenate((text_frame, frame), axis=0)
+        show_frame = frame
 
         # Text
 
@@ -288,6 +290,9 @@ class multiView:
 
     
     def videoShowThread(self):
+        cv2.namedWindow(self.win_name, cv2.WINDOW_NORMAL)
+        cv2.setWindowProperty(self.win_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+        
         while(self.isClose==False):
             # FPS
             self.fps = 1.0/(time.time() - self.preTime)
@@ -320,17 +325,22 @@ class multiView:
                 self.guiMode += 1
                 
                 if self.guiMode >= 3: self.guiMode = 0
-                    
-                #print(self.guiMode)
+
             
             # Quit GUI
+            
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 self.isClose = True
                 break
+                
+            if cv2.waitKey(1) & 0xFF == ord('Q'):
+                self.isClose = True
+                break
+            
 
             if cv2.getWindowProperty(self.win_name,cv2.WND_PROP_VISIBLE) < 1:
                 self.isClose = True
-                break
+                
                 
         # Video releasing (out of while loop)
         for i in range(len(self.vid)):
@@ -338,52 +348,66 @@ class multiView:
             
         # Close GUI
         cv2.destroyAllWindows()
+        print("Camera Released")
                 
 
             
     def canReadThread(self):
         while(self.isClose == False):
-            raw_data = self.bus.recv().data
+            received = self.bus.recv(self.can_timeout)
+              
+            if received == None:
+                self.can_data = ["", 0, 0, 0, 0, 0]
             
-            if (raw_data[0] & 0b00000011 == 0):
-                autoMode = "Off"
-            elif (raw_data[0] & 0b00000011 == 1):
-                autoMode = "경심"
-            elif (raw_data[0] & 0b00000011 == 2):
-                autoMode = "견인"
-            elif (raw_data[0] & 0b00000011 == 3):
-                autoMode = "위치"
+            else:
+                raw_data = received.data
+            
+                if (raw_data[0] & 0b00000011 == 0):
+                    autoMode = "Off"
+                elif (raw_data[0] & 0b00000011 == 1):
+                    autoMode = "경심"
+                elif (raw_data[0] & 0b00000011 == 2):
+                    autoMode = "견인"
+                elif (raw_data[0] & 0b00000011 == 3):
+                    autoMode = "위치"
                 
-            monitorMode = raw_data[0]>>5
-            axleAngle = raw_data[1]
-            engineRPM = raw_data[2] * 256 + raw_data[3]
-            liftPos = raw_data[4]
-            fuelLevel = raw_data[7]
-            
-            self.can_data = [autoMode, monitorMode, axleAngle, engineRPM, liftPos, fuelLevel]
+                monitorMode = raw_data[0]>>5
+                axleAngle = raw_data[1]
+                engineRPM = raw_data[2] * 256 + raw_data[3]
+                liftPos = raw_data[4]
+                fuelLevel = raw_data[7]
+
+                self.can_data = [autoMode, monitorMode, axleAngle, engineRPM, liftPos, fuelLevel]
                         
         # CAN bus closing (out of while loop)
+        
         self.bus.shutdown()
+        print("CAN BUS Down")
 
 
         
 def main():
     
     # Webcam number (for Logitech BRIO, 1 BRIO webcam has two /dev/videoXX, use first)
-    vid_num = [0, 1, 3, 4]
+    vid_num = [0, 2, 4, 6]
     #vid_num = [0]
     # CAN channel
     can_ch = "can0"
     # Video resolution from webcam
-    vid_res = [640, 480]
+    cap_res = [640, 480]
+    # Monitor resolution
+    disp_res_byte = subprocess.Popen('xrandr | grep "\*" | cut -d" " -f4',shell=True, stdout=subprocess.PIPE).communicate()[0]
+    disp_res = [int(disp_res_byte.split(b'x')[0]), int(disp_res_byte.split(b'x')[1])]
+    print(disp_res)
+    
     # GUI window name
     win_n = "MultiView GUI"
     # CAN filter - CAN ID, MASK, EXTENDED
     # CAN ID input 0x19ffa050~0x19ffa05f
     can_filter=[{"can_id": 0x19ffa050, "can_mask": 0x1FFFFF00, "extended": True}]
     
-    
-    multiV = multiView(vid_num=vid_num, can_chan=can_ch, vid_res=vid_res, win_n=win_n, can_filter=can_filter)
+    #cv2.namedWindow(win_n)
+    multiV = multiView(vid_num=vid_num, can_chan=can_ch, cap_res=cap_res, win_n=win_n, can_filter=can_filter)
 
     multiV.canThreadStart()
     multiV.vidThreadStart()

@@ -294,7 +294,7 @@ class multiView:
             self.preTime = time.time()
             
             vid_frame = {}
-            
+            """
             for i in range(len(self.vid)):
                 _, vid_frame[i] = self.cap[i].read()
                 
@@ -303,7 +303,7 @@ class multiView:
             vid_frame[1] = vid_frame[0]
             vid_frame[2] = vid_frame[0]
             vid_frame[3] = vid_frame[0]
-            """
+            
             
             total_frame = self.guiModeSet(vid_frame)
             #print(total_frame.shape)
@@ -370,8 +370,8 @@ class multiView:
 def main():
     
     # Webcam number (for Logitech BRIO, 1 BRIO webcam has two /dev/videoXX, use first)
-    vid_num = [0, 1, 3, 4]
-    #vid_num = [0]
+    #vid_num = [0, 2, 4, 6]
+    vid_num = [1]
     # CAN channel
     can_ch = "can0"
     # Video resolution from webcam

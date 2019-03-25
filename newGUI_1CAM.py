@@ -371,7 +371,7 @@ def main():
     
     # Webcam number (for Logitech BRIO, 1 BRIO webcam has two /dev/videoXX, use first)
     #vid_num = [0, 2, 4, 6]
-    vid_num = [0]
+    vid_num = [4]
     # CAN channel
     can_ch = "can0"
     # Video resolution from webcam
