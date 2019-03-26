@@ -529,7 +529,7 @@ def main():
     # Monitor resolution
     #disp_res_byte = subprocess.Popen('xrandr | grep "\*" | cut -d" " -f4',shell=True, stdout=subprocess.PIPE).communicate()[0]
     #disp_res = (int(disp_res_byte.split(b'x')[0]), int(disp_res_byte.split(b'x')[1]))
-    disp_res = (3840, 2160)
+    disp_res = (1920, 1080)
     # GUI window name
     win_n = "MultiView GUI"
     # CAN filter - CAN ID, MASK, EXTENDED
