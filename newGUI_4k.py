@@ -20,7 +20,7 @@ TXT_ORG = (0,128,255,255)
 # 0b0111111111110000
 
 class multiView:
-    def __init__(self, vid_num=[0, 2, 4, 6], can_chan='can0', cap_res=[640, 480],
+    def __init__(self, vid_num=[0, 2, 4, 6], can_chan='can0', cap_res=[1280, 720], disp_res=[3840, 2160],
                  win_n='MultiView', can_filter=[{"can_id": 0x19ffa050, "can_mask": 0x1FFFFF00, "extended": True}]):
         self.vid = vid_num
         self.can_c = can_chan
@@ -36,16 +36,25 @@ class multiView:
         self.can_timeout = 1
         
         self.fontpath = "/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf"
-        self.font1 = ImageFont.truetype(self.fontpath, 30)
-        self.font2 = ImageFont.truetype(self.fontpath, 40)
-        self.font3 = ImageFont.truetype(self.fontpath, 50)
+        fsize = []
+        if disp_res[1] <= 1080:
+            fsize = [30, 40, 50]
+        if disp_res[1] > 1080 and disp_res[1] <= 1440:
+            fsize = [60, 80, 100]
+        if disp_res[1] > 1440:
+            fsize = [120, 160, 200]
+            
+        self.font1 = ImageFont.truetype(self.fontpath, fsize[0])
+        self.font2 = ImageFont.truetype(self.fontpath, fsize[1])
+        self.font3 = ImageFont.truetype(self.fontpath, fsize[2])
         #self.font4 = ImageFont.truetype(self.fontpath, 40)
         
         self.win_name = win_n
         
         self.guiMode = 0
-        self.resizing = [(1200, 900), (400, 300)]
-        self.fullsize = (1600,900) # size without textpart
+        self.resizing = [(int(disp_res[0]*3/4), int(disp_res[1])), 
+                         (int(disp_res[0]/4),int(disp_res[1]/3))]
+        self.fullsize = disp_res # size without textpart
         self.txtRes = (self.fullsize[0], 60)
         self.resM2 = (int(self.fullsize[0]/2), int(self.fullsize[1]/2))
         self.resM2blk = (self.fullsize[0], int(self.fullsize[1]/4))
@@ -53,9 +62,29 @@ class multiView:
         self.selforM1 = 0
         self.selforM2 = [0, 1]
         self.viewPoint = ["전방", "후방", "좌측", "우측"]
-        self.txPosM0 = [(1100, 900), (1500, 310), (1500, 610), (1500, 910)]
-        self.txPosM1 = [(700, 460), (1500, 460), (700, 910), (1500, 910), (1450, 840)]
-        self.txPosM2 = [(380, 840), (1180, 840)]
+        #(1600,960)
+        self.txPosM0 = [(int(disp_res[0]*0.65), int(disp_res[1]*0.9)), 
+                        (int(disp_res[0]*0.95), int(disp_res[1]*0.29)), 
+                        (int(disp_res[0]*0.95), int(disp_res[1]*0.62)), 
+                        (int(disp_res[0]*0.95), int(disp_res[1]*0.95))]
+        self.recPosM0 = [((int(disp_res[0]*0.645), int(disp_res[1]*0.895)),(int(disp_res[0]*0.69), int(disp_res[1]*0.945))),
+                        ((int(disp_res[0]*0.945), int(disp_res[1]*0.285)),(int(disp_res[0]*0.990), int(disp_res[1]*0.325))),
+                        ((int(disp_res[0]*0.945), int(disp_res[1]*0.615)),(int(disp_res[0]*0.990), int(disp_res[1]*0.655))),
+                        ((int(disp_res[0]*0.945), int(disp_res[1]*0.945)),(int(disp_res[0]*0.990), int(disp_res[1]*0.985)))]
+        
+        self.txPosM1 = [(int(disp_res[0]*0.45), int(disp_res[1]*0.45)), 
+                        (int(disp_res[0]*0.95), int(disp_res[1]*0.45)), 
+                        (int(disp_res[0]*0.45), int(disp_res[1]*0.95)), 
+                        (int(disp_res[0]*0.95), int(disp_res[1]*0.95)), 
+                        (int(disp_res[0]*0.90), int(disp_res[1]*0.90))]        
+        self.recPosM1 = [((int(disp_res[0]*0.445), int(disp_res[1]*0.445)),(int(disp_res[0]*0.490), int(disp_res[1]*0.490))),
+                        ((int(disp_res[0]*0.945), int(disp_res[1]*0.445)),(int(disp_res[0]*0.990), int(disp_res[1]*0.490))),
+                        ((int(disp_res[0]*0.445), int(disp_res[1]*0.945)),(int(disp_res[0]*0.490), int(disp_res[1]*0.990))),
+                        ((int(disp_res[0]*0.945), int(disp_res[1]*0.945)),(int(disp_res[0]*0.990), int(disp_res[1]*0.990))),
+                        ((int(disp_res[0]*0.895), int(disp_res[1]*0.895)),(int(disp_res[0]*0.950), int(disp_res[1]*0.950)))]
+        
+        self.txPosM2 = [(int(disp_res[0]*0.2), int(disp_res[1]*0.7)), 
+                        (int(disp_res[0]*0.7), int(disp_res[1]*0.7))]
         
         
         # Calculating FPS
@@ -68,22 +97,30 @@ class multiView:
         
         # Text position predefine
         # For steering
-        initx = 70
-        inity = 5
-        int1 = 30
-        int2 = 120
+        initx = int(disp_res[0]*0.05)
+        inity = int(disp_res[1]*0.015)
+        int1 = int(disp_res[0]*0.020)
+        int2 = int(disp_res[0]*0.080)
         self.stPos = {}
-        self.stTxt = "좌                           조향                           우"
-        self.stTxtPos = (25, 10)
+        self.stTxt = ["좌", "조향", "우"]
+        self.stTxtPos = [(int(disp_res[0]*0.02), int(disp_res[1]*0.02)),
+                        (int(disp_res[0]*0.165), int(disp_res[1]*0.02)),
+                        (int(disp_res[0]*0.32), int(disp_res[1]*0.02))]
+        
         for i in range(10):
             self.stPos[i] = (initx+(int1*i), inity)
             if i >= 5:
                 self.stPos[i] = (initx+(int1*(i-1))+int2, inity)
 
         ypos = 10
-        self.txtPos = [(660, ypos), (860, ypos), (1060, ypos), (1150, ypos)]
+        self.txtPos = [(int(disp_res[0]*0.4), int(disp_res[1]*0.02)), 
+                       (int(disp_res[0]*0.55), int(disp_res[1]*0.02)), 
+                       (int(disp_res[0]*0.70), int(disp_res[1]*0.02)), 
+                       (int(disp_res[0]*0.75), int(disp_res[1]*0.02))]
 
         
+        # Video frame dictionary
+        self.vid_frame = {}
         # Open webcams
         #fourcc = cv2.VideoWriter_fourcc(*'MJPG')
         for i in range(len(self.vid)):
@@ -243,22 +280,39 @@ class multiView:
         frame_pil = Image.fromarray(show_frame).convert('RGBA')
         txt_new = Image.new('RGBA', frame_pil.size, (255,255,255,0))
         d_txt = ImageDraw.Draw(txt_new)
-
+        
+        # Drawing transparent rectangles
+        d_txt.rectangle(((0,0), (self.fullsize[0], self.fullsize[1]*0.07)), fill=(0,0,0,128))
+        
+        if self.guiMode == 0:
+            for i in range(len(self.recPosM0)):
+                d_txt.rectangle(self.recPosM0[i], fill=(0,0,0,128))
+                
+        elif self.guiMode == 1:
+            if self.selforM1 == 0:
+                for i in range(len(self.recPosM1)-1):
+                    d_txt.rectangle(self.recPosM1[i], fill=(0,0,0,128))
+            else:
+                d_txt.rectangle(self.recPosM1[4], fill=(0,0,0,128))
+        
 
         # Steering part
         s_cmap = [TXT_WHT25] * 11
         s_cmap[self.can_data[2]] = TXT_ORG
-
-        d_txt.text(self.stTxtPos, self.stTxt, font=self.font1, fill=TXT_WHT)
+        
+        for i in range(len(self.stTxt)):
+            d_txt.text(self.stTxtPos[i], self.stTxt[i], font=self.font1, fill=TXT_WHT)
+            
         for i in range(len(s_cmap)-1):
             d_txt.text(self.stPos[i], "█", font=self.font2, fill=s_cmap[i+1])
 
-
+        
         d_txt.text(self.txtPos[0], text_list[0], font=self.font1, fill=TXT_WHT)
         d_txt.text(self.txtPos[1], text_list[1], font=self.font1, fill=TXT_WHT)
         d_txt.text(self.txtPos[2], text_list[2], font=self.font1, fill=TXT_WHT)
         d_txt.text(self.txtPos[3], text_list[3], font=self.font1, fill=fuelCol)
         d_txt.text((5, 100), "FPS: %.1f"%self.fps, font=self.font1, fill=TXT_RED)
+        
         
         if self.guiMode == 0:
             for i in range(len(self.viewPoint)):
@@ -297,11 +351,10 @@ class multiView:
             # FPS
             self.fps = 1.0/(time.time() - self.preTime)
             self.preTime = time.time()
-            
-            vid_frame = {}
+                      
             
             for i in range(len(self.vid)):
-                _, vid_frame[i] = self.cap[i].read()
+                _, self.vid_frame[i] = self.cap[i].read()
                 
             """
             _, vid_frame[0] = self.cap[0].read()
@@ -310,17 +363,18 @@ class multiView:
             vid_frame[3] = vid_frame[0]
             """
             
-            total_frame = self.guiModeSet(vid_frame)
+            total_frame = self.guiModeSet(self.vid_frame)
             #print(total_frame.shape)
            
             show_frame = self.textDrawing(total_frame)
-                        
+            
             cv2.imshow(self.win_name, show_frame)
             cv2.setMouseCallback(self.win_name, self.mouse_callback)
             
             
             # Keyboard input
             # View change
+            
             if cv2.waitKey(1) & 0xFF == ord('v'):
                 self.guiMode += 1
                 
@@ -340,7 +394,7 @@ class multiView:
 
             if cv2.getWindowProperty(self.win_name,cv2.WND_PROP_VISIBLE) < 1:
                 self.isClose = True
-                
+            
                 
         # Video releasing (out of while loop)
         for i in range(len(self.vid)):
@@ -352,7 +406,10 @@ class multiView:
                 
 
             
+            
+            
     def canReadThread(self):
+        auto = ["Off", "경심", "견인", "위치"]
         while(self.isClose == False):
             received = self.bus.recv(self.can_timeout)
               
@@ -361,16 +418,9 @@ class multiView:
             
             else:
                 raw_data = received.data
-            
-                if (raw_data[0] & 0b00000011 == 0):
-                    autoMode = "Off"
-                elif (raw_data[0] & 0b00000011 == 1):
-                    autoMode = "경심"
-                elif (raw_data[0] & 0b00000011 == 2):
-                    autoMode = "견인"
-                elif (raw_data[0] & 0b00000011 == 3):
-                    autoMode = "위치"
+                auto_idx = raw_data[0] & 0b00000011
                 
+                autoMode = auto[auto_idx]
                 monitorMode = raw_data[0]>>5
                 axleAngle = raw_data[1]
                 engineRPM = raw_data[2] * 256 + raw_data[3]
@@ -394,12 +444,11 @@ def main():
     # CAN channel
     can_ch = "can0"
     # Video resolution from webcam
-    cap_res = [640, 480]
+    cap_res = [1280, 720]
     # Monitor resolution
-    disp_res_byte = subprocess.Popen('xrandr | grep "\*" | cut -d" " -f4',shell=True, stdout=subprocess.PIPE).communicate()[0]
-    disp_res = [int(disp_res_byte.split(b'x')[0]), int(disp_res_byte.split(b'x')[1])]
-    print(disp_res)
-    
+    #disp_res_byte = subprocess.Popen('xrandr | grep "\*" | cut -d" " -f4',shell=True, stdout=subprocess.PIPE).communicate()[0]
+    #disp_res = [int(disp_res_byte.split(b'x')[0]), int(disp_res_byte.split(b'x')[1])]
+    disp_res = [1920, 1080]
     # GUI window name
     win_n = "MultiView GUI"
     # CAN filter - CAN ID, MASK, EXTENDED
@@ -407,7 +456,8 @@ def main():
     can_filter=[{"can_id": 0x19ffa050, "can_mask": 0x1FFFFF00, "extended": True}]
     
     #cv2.namedWindow(win_n)
-    multiV = multiView(vid_num=vid_num, can_chan=can_ch, cap_res=cap_res, win_n=win_n, can_filter=can_filter)
+    multiV = multiView(vid_num=vid_num, can_chan=can_ch, cap_res=cap_res, 
+                       disp_res=disp_res, win_n=win_n, can_filter=can_filter)
 
     multiV.canThreadStart()
     multiV.vidThreadStart()
