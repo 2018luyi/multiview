@@ -20,11 +20,11 @@ TXT_ORG = (0,128,255,255)
 # 0b0111111111110000
 
 class multiView:
-    def __init__(self, vid_num=[0, 2, 4, 6], can_chan='can0', cap_res=[1280, 720], disp_res=[3840, 2160],
+    def __init__(self, vid_num=[0, 2, 4, 6], can_chan='can0', cap_res=[1280, 720], disp_res=(3840, 2160),
                  win_n='MultiView', can_filter=[{"can_id": 0x19ffa050, "can_mask": 0x1FFFFF00, "extended": True}]):
         self.vid = vid_num
         self.can_c = can_chan
-        self.vid_res = cap_res
+        self.cap_res = cap_res
         
         self.cap = {}
         
@@ -40,9 +40,9 @@ class multiView:
         if disp_res[1] <= 1080:
             fsize = [30, 40, 50]
         if disp_res[1] > 1080 and disp_res[1] <= 1440:
-            fsize = [60, 80, 100]
+            fsize = [45, 60, 75]
         if disp_res[1] > 1440:
-            fsize = [120, 160, 200]
+            fsize = [60, 80, 100]
             
         self.font1 = ImageFont.truetype(self.fontpath, fsize[0])
         self.font2 = ImageFont.truetype(self.fontpath, fsize[1])
@@ -83,8 +83,8 @@ class multiView:
                         ((int(disp_res[0]*0.945), int(disp_res[1]*0.945)),(int(disp_res[0]*0.990), int(disp_res[1]*0.990))),
                         ((int(disp_res[0]*0.895), int(disp_res[1]*0.895)),(int(disp_res[0]*0.950), int(disp_res[1]*0.950)))]
         
-        self.txPosM2 = [(int(disp_res[0]*0.2), int(disp_res[1]*0.7)), 
-                        (int(disp_res[0]*0.7), int(disp_res[1]*0.7))]
+        self.txPosM2 = [(int(disp_res[0]*0.2), int(disp_res[1]*0.85)), 
+                        (int(disp_res[0]*0.7), int(disp_res[1]*0.85))]
         
         
         # Calculating FPS
@@ -129,8 +129,8 @@ class multiView:
                 print("Error: /dev/video%d is not opened. Please check connection."%self.vid[i])
                 return -1
             #self.cap[i].set(cv2.CAP_PROP_FOURCC, fourcc)
-            self.cap[i].set(cv2.CAP_PROP_FRAME_WIDTH, self.vid_res[0])
-            self.cap[i].set(cv2.CAP_PROP_FRAME_HEIGHT, self.vid_res[1])
+            self.cap[i].set(cv2.CAP_PROP_FRAME_WIDTH, self.cap_res[0])
+            self.cap[i].set(cv2.CAP_PROP_FRAME_HEIGHT, self.cap_res[1])
             #self.cap[i].set(cv2.CAP_PROP_FPS, 60)
             
         
@@ -154,8 +154,12 @@ class multiView:
 
                     elif refPt[0] >= self.fullsize[0]/2 and refPt[1] >= (self.fullsize[1]/2+60):
                         self.selforM1 = 4
+                    
+                    #self.videoResSet()
 
-                else: self.selforM1 = 0
+                else:
+                    self.selforM1 = 0
+                    #self.videoResSet()
                     
             elif self.guiMode == 2:
                 if refPt[0] < self.fullsize[0]/2:
@@ -163,12 +167,19 @@ class multiView:
                     
                     if self.selforM2[0] >= 4:
                         self.selforM2[0] = 0
+                    
+                    #self.videoResSet()
                 
                 else:
                     self.selforM2[1] += 1
                     
                     if self.selforM2[1] >= 4:
                         self.selforM2[1] = 0
+                    
+                    #self.videoResSet()
+                        
+                        
+            
                         
                     
 
@@ -198,15 +209,14 @@ class multiView:
     def guiModeSet(self, vid_f):
         
         if self.guiMode == 0:
-            vid_frame = {}
+            vid_f[0] = cv2.resize(vid_f[0], self.resizing[0])
             
-            vid_frame[0] = cv2.resize(vid_f[0], self.resizing[0])
             for i in range(1,len(vid_f)):
-                vid_frame[i] = cv2.resize(vid_f[i], self.resizing[1])
+                vid_f[i] = cv2.resize(vid_f[i], self.resizing[1])
                 
-            right_frame = np.concatenate((vid_frame[1], vid_frame[2]), axis=0)
-            right_frame = np.concatenate((right_frame, vid_frame[3]), axis=0)
-            return_frame = np.concatenate((vid_frame[0], right_frame), axis=1)
+            right_frame = np.concatenate((vid_f[1], vid_f[2]), axis=0)
+            right_frame = np.concatenate((right_frame, vid_f[3]), axis=0)
+            return_frame = np.concatenate((vid_f[0], right_frame), axis=1)
             
             return return_frame
         
@@ -214,39 +224,27 @@ class multiView:
         
         elif self.guiMode == 1:
             
-            vid_frame = {}
-            for i in range(len(vid_f)):
-                vid_frame[i] = cv2.resize(vid_f[i], self.resGuiMode1)
-            
             if self.selforM1 == 0:
+                for i in range(len(vid_f)):
+                    vid_f[i] = cv2.resize(vid_f[i], self.resGuiMode1)
                 # Merging
-                upper_frame = np.concatenate((vid_frame[0], vid_frame[1]), axis=1)
-                lower_frame = np.concatenate((vid_frame[2], vid_frame[3]), axis=1)
+                upper_frame = np.concatenate((vid_f[0], vid_f[1]), axis=1)
+                lower_frame = np.concatenate((vid_f[2], vid_f[3]), axis=1)
                 return_frame = np.concatenate((upper_frame, lower_frame), axis=0)
                 
-            elif self.selforM1 == 1:
-                return_frame = cv2.resize(vid_frame[0], None, fx=2.0, fy=2.0)
-                
-            elif self.selforM1 == 2:
-                return_frame = cv2.resize(vid_frame[1], None, fx=2.0, fy=2.0)
-                
-            elif self.selforM1 == 3:
-                return_frame = cv2.resize(vid_frame[2], None, fx=2.0, fy=2.0)
-                
-            elif self.selforM1 == 4:
-                return_frame = cv2.resize(vid_frame[3], None, fx=2.0, fy=2.0)
+            else:
+                return_frame = cv2.resize(vid_f[self.selforM1-1], self.fullsize)
                 
             return return_frame
         
         
         
         elif self.guiMode == 2:
-            
-            vid_frame = {}
-            for i in range(len(vid_f)):
-                vid_frame[i] = cv2.resize(vid_f[i], self.resM2)
+
+            vid_f[self.selforM2[0]] = cv2.resize(vid_f[self.selforM2[0]], self.resM2)
+            vid_f[self.selforM2[1]] = cv2.resize(vid_f[self.selforM2[1]], self.resM2)
                 
-            mid_frame = np.concatenate((vid_frame[self.selforM2[0]], vid_frame[self.selforM2[1]]), axis=1)
+            mid_frame = np.concatenate((vid_f[self.selforM2[0]], vid_f[self.selforM2[1]]), axis=1)
             sand_frame = np.zeros((self.resM2blk[1], self.resM2blk[0], 3), np.uint8)
             
             upper_frame = np.concatenate((sand_frame, mid_frame), axis=0)
@@ -342,6 +340,88 @@ class multiView:
  
 
 
+
+    def videoResSet(self):
+        
+        if self.guiMode == 0:
+            if self.resizing[0][1] >= 1080 and self.resizing[0][1] < 2000:
+                self.cap[0].set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+                self.cap[0].set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+                for i in range(1,len(self.vid)):
+                    self.cap[i].set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                    self.cap[i].set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
+            
+            elif self.resizing[0][1] > 2000:
+                self.cap[0].set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+                self.cap[0].set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+                for i in range(1,len(self.vid)):
+                    self.cap[i].set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                    self.cap[i].set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
+                    
+            else:
+                self.cap[0].set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+                self.cap[0].set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+                for i in range(1,len(self.vid)):
+                    self.cap[i].set(cv2.CAP_PROP_FRAME_WIDTH, 424)
+                    self.cap[i].set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+
+        
+        elif self.guiMode == 1 or self.guiMode == 2:
+            if self.resizing[0][1] >= 1080 and self.resizing[0][1] < 2000:
+                if self.selforM1 == 0:
+                    for i in range(len(self.vid)):
+                        self.cap[i].set(cv2.CAP_PROP_FRAME_WIDTH, 960)
+                        self.cap[i].set(cv2.CAP_PROP_FRAME_HEIGHT, 540)
+                else:
+                    self.cap[self.selforM1-1].set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+                    self.cap[self.selforM1-1].set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+                    
+            elif self.resizing[0][1] > 2000:
+                if self.selforM1 == 0:
+                    for i in range(len(self.vid)):
+                        self.cap[i].set(cv2.CAP_PROP_FRAME_WIDTH, 960)
+                        self.cap[i].set(cv2.CAP_PROP_FRAME_HEIGHT, 540)
+                else:
+                    self.cap[self.selforM1].set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+                    self.cap[self.selforM1].set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+                    
+            elif self.resizing[0][1] < 1000:
+                if self.selforM1 == 0:
+                    for i in range(len(self.vid)):
+                        self.cap[i].set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                        self.cap[i].set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
+                else:
+                    self.cap[self.selforM1].set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+                    self.cap[self.selforM1].set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+                    
+        
+        
+            
+    def videoCap(self):
+        if self.guiMode == 0:
+            for i in range(len(self.vid)):
+                _, self.vid_frame[i] = self.cap[i].read()
+                
+        elif self.guiMode == 1:
+            if self.selforM1 == 0:
+                for i in range(len(self.vid)):
+                    _, self.vid_frame[i] = self.cap[i].read()
+                    
+            else:
+                for i in range(len(self.vid)):
+                    self.vid_frame[i] = 0
+                    
+                _, self.vid_frame[self.selforM1-1] = self.cap[self.selforM1-1].read()
+                
+        elif self.guiMode == 2:
+            for i in range(len(self.vid)):
+                self.vid_frame[i] = 0
+                
+            _, self.vid_frame[self.selforM2[0]] = self.cap[self.selforM2[0]].read()
+            _, self.vid_frame[self.selforM2[1]] = self.cap[self.selforM2[1]].read()
+
+
+
     
     def videoShowThread(self):
         cv2.namedWindow(self.win_name, cv2.WINDOW_NORMAL)
@@ -352,16 +432,18 @@ class multiView:
             self.fps = 1.0/(time.time() - self.preTime)
             self.preTime = time.time()
                       
-            
+            """
             for i in range(len(self.vid)):
                 _, self.vid_frame[i] = self.cap[i].read()
-                
+            """    
             """
             _, vid_frame[0] = self.cap[0].read()
             vid_frame[1] = vid_frame[0]
             vid_frame[2] = vid_frame[0]
             vid_frame[3] = vid_frame[0]
             """
+            
+            self.videoCap()
             
             total_frame = self.guiModeSet(self.vid_frame)
             #print(total_frame.shape)
@@ -379,17 +461,16 @@ class multiView:
                 self.guiMode += 1
                 
                 if self.guiMode >= 3: self.guiMode = 0
+                    
+                #self.videoResSet()
 
             
             # Quit GUI
-            
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            # ESC key
+            if cv2.waitKey(1) == 27:
                 self.isClose = True
                 break
-                
-            if cv2.waitKey(1) & 0xFF == ord('Q'):
-                self.isClose = True
-                break
+
             
 
             if cv2.getWindowProperty(self.win_name,cv2.WND_PROP_VISIBLE) < 1:
@@ -447,8 +528,8 @@ def main():
     cap_res = [1280, 720]
     # Monitor resolution
     #disp_res_byte = subprocess.Popen('xrandr | grep "\*" | cut -d" " -f4',shell=True, stdout=subprocess.PIPE).communicate()[0]
-    #disp_res = [int(disp_res_byte.split(b'x')[0]), int(disp_res_byte.split(b'x')[1])]
-    disp_res = [1920, 1080]
+    #disp_res = (int(disp_res_byte.split(b'x')[0]), int(disp_res_byte.split(b'x')[1]))
+    disp_res = (3840, 2160)
     # GUI window name
     win_n = "MultiView GUI"
     # CAN filter - CAN ID, MASK, EXTENDED
