@@ -20,7 +20,7 @@ TXT_ORG = (0,128,255,255)
 # 0b0111111111110000
 
 class multiView:
-    def __init__(self, vid_num=[0, 2, 4, 6], can_chan='can0', cap_res=[640, 360], disp_res=(1920, 1080),
+    def __init__(self, vid_num=[0, 2, 4, 6], can_chan='can0', cap_res=[1280, 720], disp_res=(3840, 2160),
                  win_n='MultiView', can_filter=[{"can_id": 0x19ffa050, "can_mask": 0x1FFFFF00, "extended": True}]):
         self.vid = vid_num
         self.can_c = can_chan
@@ -525,7 +525,7 @@ def main():
     # CAN channel
     can_ch = "can0"
     # Video resolution from webcam
-    cap_res = [640, 360]
+    cap_res = [1280, 720]
     # Monitor resolution
     #disp_res_byte = subprocess.Popen('xrandr | grep "\*" | cut -d" " -f4',shell=True, stdout=subprocess.PIPE).communicate()[0]
     #disp_res = (int(disp_res_byte.split(b'x')[0]), int(disp_res_byte.split(b'x')[1]))
