@@ -533,12 +533,12 @@ class multiView:
 def main():
     
     # Webcam number (for Logitech BRIO, 1 BRIO webcam has two /dev/videoXX, use first)
-    vid_num = [0, 2]
+    vid_num = [1,2]
     #vid_num = [0]
     # CAN channel
     can_ch = "can0"
     # Video resolution from webcam
-    cap_res = [1920, 1080]
+    cap_res = [640, 480]
     # Monitor resolution
     #disp_res_byte = subprocess.Popen('xrandr | grep "\*" | cut -d" " -f4',shell=True, stdout=subprocess.PIPE).communicate()[0]
     #disp_res = (int(disp_res_byte.split(b'x')[0]), int(disp_res_byte.split(b'x')[1]))
@@ -553,7 +553,7 @@ def main():
     multiV = multiView(vid_num=vid_num, can_chan=can_ch, cap_res=cap_res, 
                        disp_res=disp_res, win_n=win_n, can_filter=can_filter)
 
-    multiV.canThreadStart()
+    #multiV.canThreadStart()
     multiV.vidThreadStart()
 
     
